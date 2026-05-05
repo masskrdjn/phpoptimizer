@@ -41,19 +41,20 @@ pip install -e .
 
 # 4. Verify everything works
 python -m pytest tests/
-python -m phpoptimizer.cli analyze examples/performance_test.php
+python -m phpoptimizer analyze examples/example.php
 ```
 
 ## Code structure
 
 ```
 phpoptimizer/
-├── phpoptimizer/
-│   ├── simple_analyzer.py    # ⭐ Main analyzer - add your rules here
-│   ├── cli.py               # Command line interface
-│   ├── reporter.py          # Report generation
-│   ├── config.py            # Configuration management
-│   └── rules/               # 🚧 Future modular rules system
+├── src/
+│   └── phpoptimizer/
+│       ├── simple_analyzer.py    # ⭐ Main analyzer - add your rules here
+│       ├── cli.py                # Command line interface
+│       ├── reporter.py           # Report generation
+│       ├── config.py             # Configuration management
+│       └── rules/                # 🚧 Future modular rules system
 ├── tests/
 │   ├── test_analyzer.py     # ⭐ Main tests - add your tests here
 │   └── test_*.py           # Specialized tests
@@ -77,7 +78,7 @@ for ($i = 0; $i < 1000; $i++) {
 $array[] = $value;  // Or collect then array_merge
 ```
 
-### 2. Add detection in `simple_analyzer.py`
+### 2. Add detection in `src/phpoptimizer/simple_analyzer.py`
 
 ```python
 # In the line analysis loop
@@ -137,7 +138,7 @@ $small_array[] = $value;  // ✅ Should not be detected
 python -m pytest tests/test_analyzer.py::test_array_push_in_loop -v
 
 # Test on the example
-python -m phpoptimizer.cli analyze examples/array_push_test.php -v
+python -m phpoptimizer analyze examples/array_push_test.php -v
 
 # Full tests
 python -m pytest tests/
@@ -170,7 +171,7 @@ python -m pytest tests/
 
 ### Before submitting
 1. ✅ Tests pass : `python -m pytest tests/`
-2. ✅ Correct formatting : `black phpoptimizer/ tests/`
+2. ✅ Correct formatting : `black src/phpoptimizer/ tests/`
 3. ✅ Example works : Test on a real PHP file
 4. ✅ Documentation updated : README if necessary
 

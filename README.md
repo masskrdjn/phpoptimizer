@@ -47,16 +47,16 @@ pip install -e .
 phpoptimizer analyze examples/example.php --verbose
 
 # Analyze a directory recursively, write an HTML report
-phpoptimizer analyze src/ --recursive --output-format html --output report.html
+phpoptimizer analyze path/to/php-project/ --recursive --output-format html --output report.html
 
 # Security audit only (critical category)
-phpoptimizer analyze src/ --include-categories=security --recursive
+phpoptimizer analyze path/to/php-project/ --include-categories=security --recursive
 
 # Show only medium-or-higher severity issues
-phpoptimizer analyze src/ --min-weight=2 --recursive
+phpoptimizer analyze path/to/php-project/ --min-weight=2 --recursive
 
 # Target a specific PHP version for type-hint suggestions
-phpoptimizer analyze src/ --php-version=7.4 --recursive
+phpoptimizer analyze path/to/php-project/ --php-version=7.4 --recursive
 ```
 
 You can also run the package as a module:
@@ -197,25 +197,26 @@ Tunable parameters:
 
 ```
 phpoptimizer/                     # Repository root
-├── phpoptimizer/                 # Importable Python package (same name → standard Python flat layout)
-│   ├── __init__.py               # Public API: SimpleAnalyzer, ReportGenerator, Config
-│   ├── __main__.py               # `python -m phpoptimizer` entry point
-│   ├── cli.py                    # Click CLI (analyze, version, init-config)
-│   ├── config.py                 # Config + RuleConfig + categories/weights
-│   ├── simple_analyzer.py        # Orchestrator that runs each specialized analyzer
-│   ├── reporter.py               # Console, JSON and HTML reports
-│   ├── suggestions.py            # Detailed before/after correction examples
-│   └── analyzers/                # 9 specialized analyzers
-│       ├── base_analyzer.py
-│       ├── loop_analyzer.py
-│       ├── security_analyzer.py
-│       ├── error_analyzer.py
-│       ├── performance_analyzer.py
-│       ├── memory_analyzer.py
-│       ├── code_quality_analyzer.py
-│       ├── dead_code_analyzer.py
-│       ├── dynamic_calls_analyzer.py
-│       └── type_hint_analyzer.py
+├── src/
+│   └── phpoptimizer/             # Importable Python package
+│       ├── __init__.py           # Public API: SimpleAnalyzer, ReportGenerator, Config
+│       ├── __main__.py           # `python -m phpoptimizer` entry point
+│       ├── cli.py                # Click CLI (analyze, version, init-config)
+│       ├── config.py             # Config + RuleConfig + categories/weights
+│       ├── simple_analyzer.py    # Orchestrator that runs each specialized analyzer
+│       ├── reporter.py           # Console, JSON and HTML reports
+│       ├── suggestions.py        # Detailed before/after correction examples
+│       └── analyzers/            # 9 specialized analyzers
+│           ├── base_analyzer.py
+│           ├── loop_analyzer.py
+│           ├── security_analyzer.py
+│           ├── error_analyzer.py
+│           ├── performance_analyzer.py
+│           ├── memory_analyzer.py
+│           ├── code_quality_analyzer.py
+│           ├── dead_code_analyzer.py
+│           ├── dynamic_calls_analyzer.py
+│           └── type_hint_analyzer.py
 ├── tests/                        # Unit tests (run via pytest)
 ├── examples/                     # PHP files used for manual checks
 ├── CATEGORIES_GUIDE.md           # Filtering guide
@@ -226,9 +227,9 @@ phpoptimizer/                     # Repository root
 └── setup.py                      # Package metadata
 ```
 
-> The inner `phpoptimizer/` directory is the importable Python package — it
-> shares the name of the project root, which is the standard Python "flat
-> layout".
+> The package uses the standard Python `src/` layout: repository metadata,
+> tests and examples stay at the root, while importable code lives under
+> `src/phpoptimizer/`.
 
 ---
 
@@ -243,11 +244,11 @@ match the active category / weight filters), deduplicated and sorted.
 
 Adding a rule:
 
-1. Implement detection in the right analyzer in `phpoptimizer/analyzers/`
+1. Implement detection in the right analyzer in `src/phpoptimizer/analyzers/`
    using `_create_issue(rule_name, …)`
 2. Declare the new `rule_name` in `Config._init_default_rules()` with a
    category, severity and weight — otherwise it will be filtered out
-3. Optionally add a custom suggestion in `phpoptimizer/suggestions.py`
+3. Optionally add a custom suggestion in `src/phpoptimizer/suggestions.py`
 4. Add at least one positive and one negative test in `tests/`
 
 See [`agents.md`](agents.md) and [`CONTRIBUTING.md`](CONTRIBUTING.md).

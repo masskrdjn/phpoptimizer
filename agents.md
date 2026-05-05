@@ -8,10 +8,10 @@ PHP Optimizer est un outil Python qui analyse du code PHP et produit des rapport
 
 Le flux principal est :
 
-1. `phpoptimizer/cli.py` collecte les options Click et les fichiers `.php`.
-2. `phpoptimizer/config.py` construit la configuration, les regles, categories, poids et filtres.
-3. `phpoptimizer/simple_analyzer.py` lit le fichier PHP, appelle chaque analyseur specialise, filtre et deduplique les issues.
-4. `phpoptimizer/reporter.py` rend les resultats en console, JSON ou HTML.
+1. `src/phpoptimizer/cli.py` collecte les options Click et les fichiers `.php`.
+2. `src/phpoptimizer/config.py` construit la configuration, les regles, categories, poids et filtres.
+3. `src/phpoptimizer/simple_analyzer.py` lit le fichier PHP, appelle chaque analyseur specialise, filtre et deduplique les issues.
+4. `src/phpoptimizer/reporter.py` rend les resultats en console, JSON ou HTML.
 
 ## Installation et environnement
 
@@ -72,15 +72,15 @@ python -m phpoptimizer init-config example_config.json
 
 ## Structure importante
 
-- `phpoptimizer/cli.py` : commandes Click `analyze`, `version`, `init-config`.
-- `phpoptimizer/config.py` : `Config`, `RuleConfig`, `RuleCategory`, `SeverityWeight`, regles par defaut.
-- `phpoptimizer/simple_analyzer.py` : orchestrateur des analyseurs specialises.
-- `phpoptimizer/analyzers/base_analyzer.py` : contrat commun et helper `_create_issue`.
-- `phpoptimizer/analyzers/*.py` : detections specialisees.
-- `phpoptimizer/reporter.py` : generation console, JSON, HTML.
-- `phpoptimizer/suggestions.py` : suggestions detaillees associees aux `rule_name`.
-- `phpoptimizer/parser.py` et `phpoptimizer/analyzer.py` : ancien systeme/parser, encore expose par `__init__.py`.
-- `phpoptimizer/rules/` : ancien ou futur systeme de regles modulaires ; ne pas supposer qu'il pilote le flux principal actuel.
+- `src/phpoptimizer/cli.py` : commandes Click `analyze`, `version`, `init-config`.
+- `src/phpoptimizer/config.py` : `Config`, `RuleConfig`, `RuleCategory`, `SeverityWeight`, regles par defaut.
+- `src/phpoptimizer/simple_analyzer.py` : orchestrateur des analyseurs specialises.
+- `src/phpoptimizer/analyzers/base_analyzer.py` : contrat commun et helper `_create_issue`.
+- `src/phpoptimizer/analyzers/*.py` : detections specialisees.
+- `src/phpoptimizer/reporter.py` : generation console, JSON, HTML.
+- `src/phpoptimizer/suggestions.py` : suggestions detaillees associees aux `rule_name`.
+- `src/phpoptimizer/parser.py` et `src/phpoptimizer/analyzer.py` : ancien systeme/parser, encore expose par `__init__.py`.
+- `src/phpoptimizer/rules/` : ancien ou futur systeme de regles modulaires ; ne pas supposer qu'il pilote le flux principal actuel.
 - `tests/` : tests unitaires `unittest` executes via `pytest`.
 - `examples/` : exemples PHP pour essais manuels.
 - `README.md`, `README_FR.md`, `CATEGORIES_GUIDE.md`, `CONTRIBUTING.md` : documentation utilisateur et contribution.
@@ -161,11 +161,11 @@ Avant de changer ce systeme, lire `CATEGORIES_GUIDE.md` et les tests associes.
 
 Procedure recommandee :
 
-1. Choisir l'analyseur specialise existant le plus proche, ou creer un fichier dans `phpoptimizer/analyzers/` si la responsabilite est nouvelle.
+1. Choisir l'analyseur specialise existant le plus proche, ou creer un fichier dans `src/phpoptimizer/analyzers/` si la responsabilite est nouvelle.
 2. Utiliser `_create_issue(...)` plutot qu'un dictionnaire ad hoc, sauf si le fichier suit deja un motif local precis.
 3. Ajouter le `rule_name` dans `Config._init_default_rules()` avec categorie, severite, poids et parametres.
-4. Si l'analyseur est nouveau, l'importer dans `phpoptimizer/analyzers/__init__.py` et l'ajouter a `SimpleAnalyzer.analyzers`.
-5. Ajouter ou ajuster les suggestions detaillees dans `phpoptimizer/suggestions.py` si le rapport doit montrer un exemple de correction.
+4. Si l'analyseur est nouveau, l'importer dans `src/phpoptimizer/analyzers/__init__.py` et l'ajouter a `SimpleAnalyzer.analyzers`.
+5. Ajouter ou ajuster les suggestions detaillees dans `src/phpoptimizer/suggestions.py` si le rapport doit montrer un exemple de correction.
 6. Ajouter des tests dans `tests/test_*.py` avec au moins un cas positif et, si le risque de faux positif existe, un cas negatif.
 7. Ajouter un exemple PHP dans `examples/` seulement si cela aide a valider manuellement ou documenter la regle.
 8. Lancer les tests cibles puis, si possible, `python -m pytest tests/`.
@@ -174,7 +174,7 @@ Convention de nommage des regles : `domaine.nom_precis`, par exemple `security.s
 
 ## Ajouter ou modifier le CLI
 
-Le CLI utilise Click dans `phpoptimizer/cli.py`. Pour une nouvelle option :
+Le CLI utilise Click dans `src/phpoptimizer/cli.py`. Pour une nouvelle option :
 
 1. Ajouter un `@click.option`.
 2. Passer la valeur a `Config` ou a `SimpleAnalyzer`.
@@ -202,7 +202,7 @@ Il n'y a pas de configuration `black`, `ruff` ou `mypy` dans le depot. `CONTRIBU
 
 - Le worktree peut contenir des fichiers non suivis. Au moment de creation de ce guide, `test_categories.py` etait non suivi : ne pas le supprimer ni le modifier sans demande explicite.
 - Plusieurs fichiers de documentation contiennent des caracteres accentues et symboles. Sous PowerShell, l'affichage peut etre degrade selon l'encodage de la console ; ne conclus pas trop vite que le fichier est corrompu.
-- `reporter.py` importe `AnalysisResult` et `Issue` depuis `phpoptimizer/analyzer.py`, mais le flux principal CLI utilise des dictionnaires issus de `SimpleAnalyzer`.
+- `reporter.py` importe `AnalysisResult` et `Issue` depuis `src/phpoptimizer/analyzer.py`, mais le flux principal CLI utilise des dictionnaires issus de `SimpleAnalyzer`.
 - `Config.should_apply_rule()` filtre strictement les regles inconnues. C'est une source frequente de "ma detection ne sort pas".
 - Certains noms de regles testes peuvent ne pas etre tous declares dans `Config`; verifier avant de modifier le filtrage global.
 - `rules/` existe, mais le chemin principal actuel est `analyzers/` plus `SimpleAnalyzer`.
@@ -226,4 +226,3 @@ Avant de finaliser une modification :
 3. Tests complets si la modification touche `Config`, `SimpleAnalyzer`, le CLI ou un contrat commun.
 4. Verification manuelle CLI si le comportement utilisateur change.
 5. Mise a jour de la documentation si une option, categorie ou regle visible change.
-

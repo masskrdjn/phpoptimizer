@@ -50,16 +50,16 @@ pip install -e .
 phpoptimizer analyze examples/example.php --verbose
 
 # Analyser un dossier récursivement, sortie HTML
-phpoptimizer analyze src/ --recursive --output-format html --output rapport.html
+phpoptimizer analyze chemin/vers/projet-php/ --recursive --output-format html --output rapport.html
 
 # Audit de sécurité uniquement (catégorie critique)
-phpoptimizer analyze src/ --include-categories=security --recursive
+phpoptimizer analyze chemin/vers/projet-php/ --include-categories=security --recursive
 
 # Ne montrer que les problèmes de poids ≥ 2
-phpoptimizer analyze src/ --min-weight=2 --recursive
+phpoptimizer analyze chemin/vers/projet-php/ --min-weight=2 --recursive
 
 # Cibler une version PHP précise pour les annotations de type
-phpoptimizer analyze src/ --php-version=7.4 --recursive
+phpoptimizer analyze chemin/vers/projet-php/ --php-version=7.4 --recursive
 ```
 
 Exécution en module Python :
@@ -200,25 +200,26 @@ Paramètres ajustables :
 
 ```
 phpoptimizer/                     # Racine du dépôt
-├── phpoptimizer/                 # Paquet Python importable (même nom → flat layout standard Python)
-│   ├── __init__.py               # API publique : SimpleAnalyzer, ReportGenerator, Config
-│   ├── __main__.py               # Point d'entrée `python -m phpoptimizer`
-│   ├── cli.py                    # CLI Click (analyze, version, init-config)
-│   ├── config.py                 # Config, RuleConfig, catégories, poids
-│   ├── simple_analyzer.py        # Orchestrateur des analyseurs spécialisés
-│   ├── reporter.py               # Rapports console, JSON et HTML
-│   ├── suggestions.py            # Suggestions détaillées avant/après
-│   └── analyzers/                # 9 analyseurs spécialisés
-│       ├── base_analyzer.py
-│       ├── loop_analyzer.py
-│       ├── security_analyzer.py
-│       ├── error_analyzer.py
-│       ├── performance_analyzer.py
-│       ├── memory_analyzer.py
-│       ├── code_quality_analyzer.py
-│       ├── dead_code_analyzer.py
-│       ├── dynamic_calls_analyzer.py
-│       └── type_hint_analyzer.py
+├── src/
+│   └── phpoptimizer/             # Paquet Python importable
+│       ├── __init__.py           # API publique : SimpleAnalyzer, ReportGenerator, Config
+│       ├── __main__.py           # Point d'entrée `python -m phpoptimizer`
+│       ├── cli.py                # CLI Click (analyze, version, init-config)
+│       ├── config.py             # Config, RuleConfig, catégories, poids
+│       ├── simple_analyzer.py    # Orchestrateur des analyseurs spécialisés
+│       ├── reporter.py           # Rapports console, JSON et HTML
+│       ├── suggestions.py        # Suggestions détaillées avant/après
+│       └── analyzers/            # 9 analyseurs spécialisés
+│           ├── base_analyzer.py
+│           ├── loop_analyzer.py
+│           ├── security_analyzer.py
+│           ├── error_analyzer.py
+│           ├── performance_analyzer.py
+│           ├── memory_analyzer.py
+│           ├── code_quality_analyzer.py
+│           ├── dead_code_analyzer.py
+│           ├── dynamic_calls_analyzer.py
+│           └── type_hint_analyzer.py
 ├── tests/                        # Tests unitaires (lancés via pytest)
 ├── examples/                     # Fichiers PHP pour vérifications manuelles
 ├── CATEGORIES_GUIDE.md           # Guide de filtrage
@@ -229,9 +230,9 @@ phpoptimizer/                     # Racine du dépôt
 └── setup.py                      # Métadonnées du paquet
 ```
 
-> Le sous-dossier `phpoptimizer/` est le paquet Python importable — il
-> porte le même nom que le dossier racine, ce qui correspond au "flat
-> layout" standard recommandé par la communauté Python.
+> Le paquet utilise la structure Python standard `src/` : les métadonnées,
+> tests et exemples restent à la racine, tandis que le code importable vit
+> dans `src/phpoptimizer/`.
 
 ---
 
@@ -248,11 +249,11 @@ de ligne. `ReportGenerator` produit la sortie.
 Pour ajouter une règle :
 
 1. Implémenter la détection dans le bon analyseur de
-   `phpoptimizer/analyzers/` en utilisant `_create_issue(rule_name, …)`
+   `src/phpoptimizer/analyzers/` en utilisant `_create_issue(rule_name, …)`
 2. Déclarer le `rule_name` dans `Config._init_default_rules()` avec une
    catégorie, une sévérité et un poids — sinon la règle sera filtrée
 3. Ajouter éventuellement une suggestion détaillée dans
-   `phpoptimizer/suggestions.py`
+   `src/phpoptimizer/suggestions.py`
 4. Ajouter au moins un test positif et un test négatif dans `tests/`
 
 Voir [`agents.md`](agents.md) et [`CONTRIBUTING.md`](CONTRIBUTING.md).

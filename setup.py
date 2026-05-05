@@ -6,7 +6,8 @@ setup(
     description="Analyseur et optimiseur de code PHP",
     author="Votre Nom",
     author_email="votre.email@example.com",
-    packages=find_packages(),
+    packages=find_packages(where="src"),
+    package_dir={"": "src"},
     install_requires=[
         "click>=8.0.0",
         "colorama>=0.4.0",
