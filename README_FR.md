@@ -146,6 +146,9 @@ Paramètres ajustables :
 
 - `security.sql_injection`, `security.xss_vulnerability`
 - `security.weak_password_hashing`, `security.file_inclusion`
+- `security.command_injection`, `security.insecure_deserialization`
+- `security.path_traversal`, `security.ssrf`
+- `security.csrf_missing_protection`
 - `security.dangerous_function`, `security.authentication`
 - `security.configuration`, `security.sensitive_data_exposure`
 

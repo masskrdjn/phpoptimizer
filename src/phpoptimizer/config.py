@@ -105,6 +105,11 @@ class Config:
             'security.file_inclusion':          rule(ERR, SECURITY, CRITICAL),
             'security.dangerous_function':      rule(WARNING, SECURITY, CRITICAL),
             'security.authentication':          rule(WARNING, SECURITY, CRITICAL),
+            'security.command_injection':       rule(ERR, SECURITY, CRITICAL),
+            'security.insecure_deserialization': rule(ERR, SECURITY, CRITICAL),
+            'security.path_traversal':          rule(ERR, SECURITY, CRITICAL),
+            'security.ssrf':                    rule(ERR, SECURITY, CRITICAL),
+            'security.csrf_missing_protection': rule(WARNING, SECURITY, HIGH),
             'security.configuration':           rule(WARNING, SECURITY, HIGH),
             'security.sensitive_data_exposure': rule(WARNING, SECURITY, HIGH),
 

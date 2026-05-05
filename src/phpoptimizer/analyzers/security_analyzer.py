@@ -11,10 +11,13 @@ from .base_analyzer import BaseAnalyzer
 
 class SecurityAnalyzer(BaseAnalyzer):
     """Analyseur spécialisé pour les problèmes de sécurité"""
+
+    USER_INPUT_PATTERN = r'\$_(?:GET|POST|REQUEST|COOKIE|SERVER|FILES)\s*\['
     
     def analyze(self, content: str, file_path: Path, lines: List[str]) -> List[Dict[str, Any]]:
         """Analyser les problèmes de sécurité dans le code PHP"""
         issues = []
+        tainted_vars = set()
         
         for line_num, line in enumerate(lines, 1):
             line_stripped = line.strip()
@@ -22,6 +25,8 @@ class SecurityAnalyzer(BaseAnalyzer):
             # Ignorer les commentaires et directives Blade
             if self._is_comment_line(line) or self._is_blade_directive(line):
                 continue
+
+            self._track_tainted_variables(line_stripped, tainted_vars)
             
             # Détecter les injections SQL
             self._detect_sql_injection(line_stripped, line_num, file_path, line, issues)
@@ -46,8 +51,193 @@ class SecurityAnalyzer(BaseAnalyzer):
             
             # Détecter les problèmes de configuration
             self._detect_configuration_issues(line_stripped, line_num, file_path, line, issues)
+            self._detect_command_injection(line_stripped, line_num, file_path, line, issues, tainted_vars)
+            self._detect_insecure_deserialization(line_stripped, line_num, file_path, line, issues, tainted_vars)
+            self._detect_path_traversal(line_stripped, line_num, file_path, line, issues, tainted_vars)
+            self._detect_ssrf(line_stripped, line_num, file_path, line, issues, tainted_vars)
         
+        self._detect_csrf_missing_protection(file_path, lines, issues)
+
         return issues
+
+    def _track_tainted_variables(self, line_stripped: str, tainted_vars: set) -> None:
+        """Track simple user-input propagation across nearby PHP statements."""
+        assignment = re.match(r'\s*(\$[a-zA-Z_][a-zA-Z0-9_]*)\s*=\s*(.+?);?\s*$', line_stripped)
+        if not assignment:
+            return
+
+        target_var, expression = assignment.groups()
+        if self._contains_sanitizer(expression):
+            tainted_vars.discard(target_var)
+        elif self._contains_user_input(expression) or any(var in expression for var in tainted_vars):
+            tainted_vars.add(target_var)
+        elif target_var in tainted_vars:
+            tainted_vars.remove(target_var)
+
+    def _contains_user_input(self, text: str) -> bool:
+        return bool(re.search(self.USER_INPUT_PATTERN, text, re.IGNORECASE))
+
+    def _contains_tainted_input(self, text: str, tainted_vars: set) -> bool:
+        return self._contains_user_input(text) or any(var in text for var in tainted_vars)
+
+    def _contains_sanitizer(self, text: str) -> bool:
+        sanitizers = (
+            'intval', 'floatval', 'basename', 'realpath', 'escapeshellarg',
+            'escapeshellcmd'
+        )
+        return bool(re.search(r'\b(?:' + '|'.join(sanitizers) + r')\s*\(', text, re.IGNORECASE))
+
+    def _contains_shell_sanitizer(self, text: str) -> bool:
+        return bool(re.search(r'\b(?:escapeshellarg|escapeshellcmd)\s*\(', text, re.IGNORECASE))
+
+    def _contains_path_sanitizer(self, text: str) -> bool:
+        return bool(re.search(r'\b(?:basename|realpath)\s*\(', text, re.IGNORECASE))
+
+    def _detect_command_injection(self, line_stripped: str, line_num: int, file_path: Path,
+                                  line: str, issues: List[Dict[str, Any]],
+                                  tainted_vars: set) -> None:
+        """Detect command execution fed by user-controlled data."""
+        if self._contains_shell_sanitizer(line_stripped):
+            return
+
+        command_functions = r'(?:exec|system|shell_exec|passthru|popen|proc_open)'
+        function_call = re.search(rf'\b{command_functions}\s*\((.*)\)', line_stripped, re.IGNORECASE)
+        backtick_call = re.search(r'`[^`]*(?:\$_(?:GET|POST|REQUEST|COOKIE|SERVER|FILES)\s*\[|\$[a-zA-Z_][a-zA-Z0-9_]*)[^`]*`', line_stripped)
+
+        if (function_call and self._contains_tainted_input(function_call.group(1), tainted_vars)) or (
+            backtick_call and self._contains_tainted_input(backtick_call.group(0), tainted_vars)
+        ):
+            issues.append(self._create_issue(
+                'security.command_injection',
+                'Injection de commande potentielle: commande systeme construite depuis une entree utilisateur',
+                file_path,
+                line_num,
+                'error',
+                'security',
+                'Eviter les commandes shell avec entree utilisateur; sinon valider par liste blanche et utiliser escapeshellarg()',
+                line.strip()
+            ))
+
+    def _detect_insecure_deserialization(self, line_stripped: str, line_num: int, file_path: Path,
+                                         line: str, issues: List[Dict[str, Any]],
+                                         tainted_vars: set) -> None:
+        """Detect unserialize() on untrusted data."""
+        match = re.search(r'\bunserialize\s*\((.*)\)', line_stripped, re.IGNORECASE)
+        if not match or not self._contains_tainted_input(match.group(1), tainted_vars):
+            return
+
+        if re.search(r'["\']?allowed_classes["\']?\s*=>\s*false', match.group(1), re.IGNORECASE):
+            return
+
+        issues.append(self._create_issue(
+            'security.insecure_deserialization',
+            'Deserialisation non sure: unserialize() utilise des donnees utilisateur',
+            file_path,
+            line_num,
+            'error',
+            'security',
+            'Eviter unserialize() sur donnees non fiables; preferer JSON ou limiter allowed_classes a false',
+            line.strip()
+        ))
+
+    def _detect_path_traversal(self, line_stripped: str, line_num: int, file_path: Path,
+                               line: str, issues: List[Dict[str, Any]],
+                               tainted_vars: set) -> None:
+        """Detect filesystem paths controlled by user input."""
+        if self._contains_path_sanitizer(line_stripped):
+            return
+
+        filesystem_functions = (
+            'include', 'include_once', 'require', 'require_once', 'fopen',
+            'readfile', 'unlink', 'scandir', 'glob', 'file_exists',
+            'is_file', 'is_dir'
+        )
+        pattern = r'\b(?:' + '|'.join(filesystem_functions) + r')\s*\((.*)\)'
+        match = re.search(pattern, line_stripped, re.IGNORECASE)
+        if not match or not self._contains_tainted_input(match.group(1), tainted_vars):
+            return
+
+        issues.append(self._create_issue(
+            'security.path_traversal',
+            'Path traversal potentiel: chemin de fichier construit depuis une entree utilisateur',
+            file_path,
+            line_num,
+            'error',
+            'security',
+            'Valider le chemin par liste blanche, normaliser avec realpath() et verifier le repertoire de base',
+            line.strip()
+        ))
+
+    def _detect_ssrf(self, line_stripped: str, line_num: int, file_path: Path,
+                     line: str, issues: List[Dict[str, Any]],
+                     tainted_vars: set) -> None:
+        """Detect outbound network calls controlled by user input."""
+        ssrf_patterns = [
+            r'\bfile_get_contents\s*\((.*)\)',
+            r'\bcurl_setopt\s*\([^,]+,\s*CURLOPT_URL\s*,\s*(.*)\)',
+            r'->\s*(?:request|get|post|put|delete)\s*\((.*)\)',
+        ]
+
+        for pattern in ssrf_patterns:
+            match = re.search(pattern, line_stripped, re.IGNORECASE)
+            if match and self._contains_tainted_input(match.group(1), tainted_vars):
+                issues.append(self._create_issue(
+                    'security.ssrf',
+                    'SSRF potentiel: URL sortante controlee par une entree utilisateur',
+                    file_path,
+                    line_num,
+                    'error',
+                    'security',
+                    'Valider les URLs par liste blanche et bloquer les adresses internes ou metadata',
+                    line.strip()
+                ))
+                break
+
+    def _detect_csrf_missing_protection(self, file_path: Path, lines: List[str],
+                                        issues: List[Dict[str, Any]]) -> None:
+        """Detect POST forms with no visible CSRF token."""
+        in_form = False
+        form_start_line = 0
+        form_lines = []
+
+        for line_num, line in enumerate(lines, 1):
+            line_stripped = line.strip()
+            if self._is_comment_line(line) or self._is_blade_directive(line):
+                continue
+
+            if re.search(r'<form\b', line_stripped, re.IGNORECASE):
+                in_form = True
+                form_start_line = line_num
+                form_lines = [line_stripped]
+                if re.search(r'</form\s*>', line_stripped, re.IGNORECASE):
+                    self._report_csrf_form_if_needed(file_path, form_start_line, form_lines, issues)
+                    in_form = False
+                continue
+
+            if in_form:
+                form_lines.append(line_stripped)
+                if re.search(r'</form\s*>', line_stripped, re.IGNORECASE):
+                    self._report_csrf_form_if_needed(file_path, form_start_line, form_lines, issues)
+                    in_form = False
+
+    def _report_csrf_form_if_needed(self, file_path: Path, form_start_line: int,
+                                    form_lines: List[str],
+                                    issues: List[Dict[str, Any]]) -> None:
+        form_text = ' '.join(form_lines)
+        is_post_form = re.search(r'method\s*=\s*["\']?post["\']?', form_text, re.IGNORECASE)
+        has_csrf_token = re.search(r'(csrf|_token|csrf_token|csrf_field\s*\()', form_text, re.IGNORECASE)
+
+        if is_post_form and not has_csrf_token:
+            issues.append(self._create_issue(
+                'security.csrf_missing_protection',
+                'Protection CSRF manquante: formulaire POST sans token visible',
+                file_path,
+                form_start_line,
+                'warning',
+                'security',
+                'Ajouter un token CSRF verifie cote serveur pour les actions sensibles',
+                form_lines[0]
+            ))
     
     def _detect_sql_injection(self, line_stripped: str, line_num: int, file_path: Path, 
                              line: str, issues: List[Dict[str, Any]]) -> None:
