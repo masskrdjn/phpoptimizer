@@ -74,7 +74,7 @@ def analyze(path: str, recursive: bool, output_format: str, output: Optional[str
         # Configuration
         config = Config()
         if rules:
-            config.load_rules_file(rules)
+            config.load_rules_file(Path(rules))
         config.set_severity_level(severity)
         config.php_version = php_version  # Définir la version PHP cible
 
@@ -93,8 +93,8 @@ def analyze(path: str, recursive: bool, output_format: str, output: Optional[str
         if min_weight:
             config.set_min_severity_weight(min_weight)
 
-        # Collecte des fichiers PHP
-        php_files = collect_php_files(Path(path), recursive)
+        # Collecte des fichiers PHP, en respectant les exclusions et la taille max
+        php_files = collect_php_files(Path(path), recursive, config)
 
         if not php_files:
             click.echo(f"{Fore.YELLOW}⚠️  Aucun fichier PHP trouvé{Style.RESET_ALL}")
@@ -155,18 +155,25 @@ def analyze(path: str, recursive: bool, output_format: str, output: Optional[str
         sys.exit(1)
 
 
-def collect_php_files(path: Path, recursive: bool) -> List[Path]:
-    """Collecte tous les fichiers PHP dans le chemin donné."""
-    php_files = []
-    
+def collect_php_files(path: Path, recursive: bool,
+                      config: Optional[Config] = None) -> List[Path]:
+    """Collecter les fichiers PHP à analyser.
+
+    Si une ``Config`` est fournie, les filtres ``should_process_file``
+    (extensions, chemins exclus, taille maximum) sont appliqués.
+    """
     if path.is_file():
-        if path.suffix.lower() == '.php':
-            php_files.append(path)
+        candidates: List[Path] = [path] if path.suffix.lower() == '.php' else []
     elif path.is_dir():
         pattern = "**/*.php" if recursive else "*.php"
-        php_files.extend(path.glob(pattern))
-    
-    return sorted(php_files)
+        candidates = list(path.glob(pattern))
+    else:
+        candidates = []
+
+    if config is not None:
+        candidates = [p for p in candidates if config.should_process_file(p)]
+
+    return sorted(candidates)
 
 
 @click.group()

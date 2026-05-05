@@ -7,9 +7,8 @@ from pathlib import Path
 from typing import List, Dict, Any
 from enum import Enum
 from datetime import datetime
-from colorama import Fore, Style, Back
+from colorama import Fore, Style
 
-from .analyzer import AnalysisResult, Issue
 from .suggestions import SuggestionProvider
 
 
@@ -762,7 +761,7 @@ class ReportGenerator:
         
         # Code incriminé
         if code_snippet:
-            output += f"        � {Fore.LIGHTRED_EX}Code concerné:{Style.RESET_ALL} {code_snippet}\n"
+            output += f"        🔍 {Fore.LIGHTRED_EX}Code concerné:{Style.RESET_ALL} {code_snippet}\n"
         
         # Exemple de correction détaillé
         if exemple_apres and exemple_apres != "# Correction nécessaire - consultez la documentation":

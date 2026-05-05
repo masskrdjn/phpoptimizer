@@ -69,11 +69,11 @@ class SecurityAnalyzer(BaseAnalyzer):
         
         # Exclusions pour éviter les faux positifs (XPath, API REST, etc.)
         exclusion_patterns = [
-            r'\$xpath\s*->\s*query\s*\(',  # XPath queries
-            r'\$dom\s*->\s*query\s*\(',    # DOM queries
-            r'\$client\s*->\s*query\s*\(', # API client queries
-            r'\$api\s*->\s*query\s*\(',    # API queries
-            r'curl_.*query',               # cURL avec query parameters
+            r'\$xpath\s*->\s*query\s*\(',  # Requêtes XPath
+            r'\$dom\s*->\s*query\s*\(',    # Requêtes DOM
+            r'\$client\s*->\s*query\s*\(', # Requêtes d'un client API
+            r'\$api\s*->\s*query\s*\(',    # Requêtes API
+            r'curl_.*query',               # cURL avec paramètres query
             r'http_build_query',           # Construction de query string HTTP
         ]
         

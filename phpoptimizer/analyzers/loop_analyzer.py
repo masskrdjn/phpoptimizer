@@ -57,20 +57,59 @@ class LoopAnalyzer(BaseAnalyzer):
             if in_loop and loop_stack:
                 # Détecter count() ou sizeof() dans le corps d'une boucle
                 self._detect_expensive_functions_in_loop(line_stripped, line_num, file_path, line, issues)
-                
+
                 # Détecter les requêtes SQL dans les boucles
                 self._detect_queries_in_loop(line_stripped, line_num, file_path, line, issues)
-                
+
                 # Détecter les fonctions lourdes dans les boucles
                 self._detect_heavy_functions_in_loop(line_stripped, line_num, file_path, line, issues)
-                
+
                 # Détecter création répétée d'objets dans les boucles
                 self._detect_object_creation_in_loop(line_stripped, line_num, file_path, line, issues)
-                
+
+                # Détecter les accès répétés aux superglobales dans les boucles
+                self._detect_superglobal_access_in_loop(line_stripped, line_num, file_path, line, issues)
+
                 # Détecter les problèmes de complexité algorithmique
                 self._detect_algorithmic_complexity_issues(line_stripped, line_num, file_path, line, issues, loop_stack)
-        
+
         return issues
+
+    def _detect_superglobal_access_in_loop(self, line_stripped: str, line_num: int,
+                                           file_path: Path, line: str,
+                                           issues: List[Dict[str, Any]]) -> None:
+        """Détecter les accès aux superglobales à l'intérieur d'une boucle.
+
+        Chaque accès est coûteux à répétition : la valeur est généralement
+        constante pendant la boucle, donc l'extraire avant la boucle évite des
+        recherches superflues dans des tableaux superglobaux à chaque itération.
+        """
+        superglobals = ('$_SESSION', '$_COOKIE', '$_GET', '$_POST',
+                        '$_SERVER', '$_ENV', '$_REQUEST', '$_FILES', '$GLOBALS')
+
+        # Ignorer la ligne d'en-tête de la boucle elle-même (foreach/for/while)
+        if re.match(r'\s*(for|foreach|while)\s*\(', line_stripped):
+            return
+
+        cleaned = self._remove_strings_and_comments(line)
+        for superglobal in superglobals:
+            if superglobal in cleaned:
+                issues.append(self._create_issue(
+                    rule_name='performance.superglobal_access_in_loop',
+                    message=(
+                        f"Accès à la superglobale {superglobal} dans une boucle. "
+                        "Stockez la valeur dans une variable locale avant la boucle."
+                    ),
+                    file_path=file_path,
+                    line=line_num,
+                    severity='info',
+                    issue_type='performance',
+                    suggestion=(
+                        f"Extrayez l'accès à {superglobal} hors de la boucle et "
+                        "réutilisez la variable locale."
+                    ),
+                    code_snippet=line.strip(),
+                ))
 
     def _detect_consecutive_loop_fusion(self, lines: List[str], file_path: Path, issues: List[Dict[str, Any]]) -> None:
         """Détecter les opportunités de fusion de boucles consécutives"""
@@ -146,12 +185,12 @@ class LoopAnalyzer(BaseAnalyzer):
                     if re.search(scalar_pattern, prev_line, re.IGNORECASE):
                         issues.append(self._create_issue(
                             'error.foreach_non_iterable',
-                            f'foreach on non-iterable variable ${var_name} (assigned to scalar value)',
+                            f'foreach sur la variable non itérable ${var_name} (valeur scalaire affectée)',
                             file_path,
                             line_num,
                             'error',
                             'error',
-                            f'Ensure ${var_name} is an array or iterable object before using foreach',
+                            f'Vérifier que ${var_name} est un tableau ou un objet itérable avant d\'utiliser foreach',
                             lines[line_num - 1].strip()
                         ))
                         break

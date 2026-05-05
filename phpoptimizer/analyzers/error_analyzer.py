@@ -84,18 +84,18 @@ class ErrorAnalyzer(BaseAnalyzer):
         # Point-virgule manquant
         if (re.search(r'\$[a-zA-Z_][a-zA-Z0-9_]*\s*=\s*[^;]*$', line_stripped) and
             not re.search(r'(if|for|while|foreach|switch|function|class|interface|trait)', line_stripped) and
-            not re.search(r'\$[a-zA-Z_][a-zA-Z0-9_]*\s*=\s*\[', line_stripped) and  # Ignore array declarations
-            not re.search(r'\$[a-zA-Z_][a-zA-Z0-9_]*\s*=\s*\{', line_stripped) and  # Ignore object/closure declarations
-            not re.search(r'\$[a-zA-Z_][a-zA-Z0-9_]*\s*=\s*new\s+', line_stripped) and  # Ignore multi-line object instantiation
-            not re.search(r'\$[a-zA-Z_][a-zA-Z0-9_]*\s*=\s*\(', line_stripped) and  # Ignore parenthesized expressions
-            not re.search(r'\$[a-zA-Z_][a-zA-Z0-9_]*\s*=\s*[a-zA-Z_][a-zA-Z0-9_]*\s*\(.*\[', line_stripped) and  # Ignore function calls with array parameters
-            not line_stripped.endswith('.') and  # Ignore string concatenation continuation
-            not line_stripped.endswith('+') and  # Ignore arithmetic continuation
-            not line_stripped.endswith('-') and  # Ignore arithmetic continuation
-            not line_stripped.endswith('*') and  # Ignore arithmetic continuation
-            not line_stripped.endswith('/') and  # Ignore arithmetic continuation
-            not line_stripped.endswith('&&') and  # Ignore logical continuation
-            not line_stripped.endswith('||')):  # Ignore logical continuation
+            not re.search(r'\$[a-zA-Z_][a-zA-Z0-9_]*\s*=\s*\[', line_stripped) and  # Ignorer les déclarations de tableaux
+            not re.search(r'\$[a-zA-Z_][a-zA-Z0-9_]*\s*=\s*\{', line_stripped) and  # Ignorer les déclarations d'objet ou de closure
+            not re.search(r'\$[a-zA-Z_][a-zA-Z0-9_]*\s*=\s*new\s+', line_stripped) and  # Ignorer les instanciations multi-lignes
+            not re.search(r'\$[a-zA-Z_][a-zA-Z0-9_]*\s*=\s*\(', line_stripped) and  # Ignorer les expressions entre parenthèses
+            not re.search(r'\$[a-zA-Z_][a-zA-Z0-9_]*\s*=\s*[a-zA-Z_][a-zA-Z0-9_]*\s*\(.*\[', line_stripped) and  # Ignorer les appels de fonction avec tableaux
+            not line_stripped.endswith('.') and  # Ignorer la continuation de concaténation
+            not line_stripped.endswith('+') and  # Ignorer la continuation arithmétique
+            not line_stripped.endswith('-') and  # Ignorer la continuation arithmétique
+            not line_stripped.endswith('*') and  # Ignorer la continuation arithmétique
+            not line_stripped.endswith('/') and  # Ignorer la continuation arithmétique
+            not line_stripped.endswith('&&') and  # Ignorer la continuation logique
+            not line_stripped.endswith('||')):  # Ignorer la continuation logique
             issues.append(self._create_issue(
                 'error.syntax_semicolon',
                 'Point-virgule potentiellement manquant à la fin de l\'instruction',
@@ -453,10 +453,10 @@ class ErrorAnalyzer(BaseAnalyzer):
         # Retirer les commentaires de bloc /* */
         line_without_comments = re.sub(r'/\*.*?\*/', '', line_without_comments)
         
-        # Skip detection for lines that look valid (reduce false positives)
+        # Ne pas analyser les lignes qui paraissent valides (réduit les faux positifs)
         line_clean = line_without_comments.strip()
         if not line_clean or line_clean.endswith(';'):
-            # Skip lines that end with semicolon (likely complete statements)
+            # Ignorer les lignes terminées par un point-virgule (instructions probablement complètes)
             return
         
         # Algorithme amélioré pour compter les guillemets non échappés
@@ -470,7 +470,7 @@ class ErrorAnalyzer(BaseAnalyzer):
                 'Guillemets simples potentiellement non fermés',
                 file_path,
                 line_num,
-                'info',  # Changed from 'error' to 'info'
+                'info',  # Sévérité abaissée pour éviter les faux positifs critiques
                 'error',
                 'Vérifier que tous les guillemets simples sont correctement fermés',
                 line.strip()
@@ -482,7 +482,7 @@ class ErrorAnalyzer(BaseAnalyzer):
                 'Guillemets doubles potentiellement non fermés',
                 file_path,
                 line_num,
-                'info',  # Changed from 'error' to 'info'
+                'info',  # Sévérité abaissée pour éviter les faux positifs critiques
                 'error',
                 'Vérifier que tous les guillemets doubles sont correctement fermés',
                 line.strip()

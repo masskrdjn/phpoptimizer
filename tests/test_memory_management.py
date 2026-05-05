@@ -228,7 +228,7 @@ class TestMemoryManagement(unittest.TestCase):
         result = self.analyzer.analyze_content(code, Path("test.php"))
         issues = [issue for issue in result['issues'] if issue.get('rule_name') == 'error.foreach_non_iterable']
         self.assertGreater(len(issues), 0, "Devrait détecter foreach sur un non-itérable")
-        self.assertIn("foreach on non-iterable", issues[0]['message'])
+        self.assertIn("foreach sur la variable non itérable", issues[0]['message'])
 
     def test_heavy_functions_in_loop(self):
         """Test: fonctions lourdes dans une boucle doivent être détectées"""

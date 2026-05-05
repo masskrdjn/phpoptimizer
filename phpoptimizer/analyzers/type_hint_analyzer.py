@@ -167,12 +167,12 @@ class TypeHintAnalyzer(BaseAnalyzer):
                     if adapted_type:
                         issues.append(self._create_issue(
                             rule_name='performance.missing_parameter_type',
-                            message=f"Parameter '{param_name}' could be typed as '{adapted_type}' for better performance",
+                            message=f"Le paramètre '{param_name}' pourrait être typé en '{adapted_type}' pour de meilleures performances",
                             file_path=file_path,
                             line=line_num,
                             severity='info',
                             issue_type='performance',
-                            suggestion=f"Add type hint: {adapted_type} {param_name}",
+                            suggestion=f"Ajouter une annotation de type : {adapted_type} {param_name}",
                             code_snippet=f"function {func_name}({params})"
                         ))
         
@@ -202,12 +202,12 @@ class TypeHintAnalyzer(BaseAnalyzer):
             if adapted_type:
                 issues.append(self._create_issue(
                     rule_name='performance.missing_return_type',
-                    message=f"Function '{func_name}' could specify return type '{adapted_type}' for JIT optimization",
+                    message=f"La fonction '{func_name}' pourrait préciser un type de retour '{adapted_type}' pour profiter du JIT",
                     file_path=file_path,
                     line=line_num,
                     severity='info',
                     issue_type='performance',
-                    suggestion=f"Add return type: : {adapted_type}",
+                    suggestion=f"Ajouter un type de retour : : {adapted_type}",
                     code_snippet=f"function {func_name}"
                 ))
         

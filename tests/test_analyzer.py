@@ -68,7 +68,7 @@ print $_POST['data'];
     
     def test_long_line_detection(self):
         """Test de détection de lignes trop longues"""
-        long_line = "<?php\n" + "// " + "x" * 150 + "\n?>"
+        long_line = "<?php\n$variable = '" + "x" * 150 + "';\n?>"
         
         with tempfile.NamedTemporaryFile(mode='w', suffix='.php', delete=False) as f:
             f.write(long_line)
@@ -78,9 +78,9 @@ print $_POST['data'];
             
             self.assertTrue(result['success'])
             
-            # Vérifier qu'un problème PSR est détecté
-            psr_issues = [issue for issue in result['issues'] 
-                         if issue['rule_name'] == 'best_practices.psr_compliance']
+            # Vérifier qu'un problème de longueur de ligne est détecté
+            psr_issues = [issue for issue in result['issues']
+                         if issue['rule_name'] == 'best_practices.line_length']
             self.assertGreater(len(psr_issues), 0)
         
         # Nettoyer

@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cmd.exe /c \"dir c:\\\\coding\\\\phpoptimizer /B\")",
+      "Bash(/c/coding/phpoptimizer/venv/Scripts/python.exe -m pytest tests/)",
+      "Bash(git rm *)",
+      "Bash(/c/coding/phpoptimizer/venv/Scripts/python.exe -m pytest tests/test_analyzer.py::TestSimpleAnalyzer::test_long_line_detection -v)",
+      "Bash(/c/coding/phpoptimizer/venv/Scripts/python.exe -m phpoptimizer analyze examples/simple_test.php)",
+      "Bash(/c/coding/phpoptimizer/venv/Scripts/python.exe -m pytest tests/test_memory_management.py::TestMemoryManagement::test_foreach_on_non_iterable -v)",
+      "Bash(/c/coding/phpoptimizer/venv/Scripts/python.exe -m pytest tests/ -v)",
+      "Bash(/c/coding/phpoptimizer/venv/Scripts/python.exe -m phpoptimizer analyze examples/ --recursive --output-format json --output /tmp/report.json)",
+      "Bash(/c/coding/phpoptimizer/venv/Scripts/python.exe -c \"import json; d=json.load\\(open\\('/tmp/report.json'\\)\\); print\\('Files:', d['summary']['total_files'], '| Issues:', d['summary']['total_issues']\\); print\\('Rules:', sorted\\({i['rule_name'] for r in d['results'] for i in r.get\\('issues',[]\\)}\\)\\)\")",
+      "Bash(/c/coding/phpoptimizer/venv/Scripts/python.exe -c \"import json; d=json.load\\(open\\('C:/temp/report.json'\\)\\); print\\('Files:', d['summary']['total_files'], '| Issues:', d['summary']['total_issues']\\); print\\('Distinct rules emitted:', len\\({i['rule_name'] for r in d['results'] for i in r.get\\('issues',[]\\)}\\)\\)\")",
+      "Bash(/c/coding/phpoptimizer/venv/Scripts/python.exe -c \"import json; d=json.load\\(open\\('C:/temp/report.json',encoding='utf-8'\\)\\); print\\('Files:', d['summary']['total_files'], '| Issues:', d['summary']['total_issues']\\); rules=sorted\\({i['rule_name'] for r in d['results'] for i in r.get\\('issues',[]\\)}\\); print\\('Distinct rules emitted:', len\\(rules\\)\\); print\\('\\\\n'.join\\(rules\\)\\)\")",
+      "Bash(/c/coding/phpoptimizer/venv/Scripts/python.exe -m phpoptimizer analyze examples/ --recursive --include-categories=security --output-format json --output C:/temp/sec.json)",
+      "Bash(/c/coding/phpoptimizer/venv/Scripts/python.exe -c \"import json; d=json.load\\(open\\('C:/temp/sec.json',encoding='utf-8'\\)\\); print\\('Issues:', d['summary']['total_issues']\\)\")",
+      "Bash(/c/coding/phpoptimizer/venv/Scripts/python.exe -m phpoptimizer analyze examples/ --recursive --min-weight=3 --output-format json --output C:/temp/h.json)",
+      "Bash(/c/coding/phpoptimizer/venv/Scripts/python.exe -c \"import json; d=json.load\\(open\\('C:/temp/h.json',encoding='utf-8'\\)\\); print\\('Issues:', d['summary']['total_issues']\\)\")"
+    ]
+  }
+}

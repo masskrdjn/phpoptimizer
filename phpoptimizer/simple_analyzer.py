@@ -118,17 +118,15 @@ class SimpleAnalyzer:
                     analyzer_issues = analyzer.analyze(content, file_path, lines)
                     all_issues.extend(analyzer_issues)
                 except Exception as e:
-                    # Log l'erreur de l'analyseur mais continue avec les autres
-                    if hasattr(self.config, 'verbose') and self.config.verbose:
-                        print(f"Erreur dans {analyzer.__class__.__name__}: {str(e)}")
-                    # En cas d'erreur, ajouter une issue d'erreur pour debug
+                    # En cas d'erreur dans un analyseur, on continue avec les
+                    # autres et on signale le problème comme une issue
                     all_issues.append({
                         'rule_name': 'analyzer.error',
                         'message': f'Erreur dans {analyzer.__class__.__name__}: {str(e)}',
                         'file_path': str(file_path),
                         'line': 1,
                         'severity': 'error',
-                        'type': 'analyzer',
+                        'issue_type': 'analyzer',
                         'suggestion': 'Vérifier la syntaxe du fichier PHP',
                         'code_snippet': ''
                     })
@@ -155,12 +153,17 @@ class SimpleAnalyzer:
             # Trier les issues par numéro de ligne
             filtered_issues.sort(key=lambda x: x.get('line', 0))
 
-            # Remove duplicates based on rule_name, line, and message
+            # Dédupliquer sur (rule_name, line, message) en restant tolérant
+            # aux issues incomplètes
             unique_issues = []
             seen_issues = set()
 
             for issue in filtered_issues:
-                issue_key = (issue['rule_name'], issue['line'], issue['message'])
+                issue_key = (
+                    issue.get('rule_name', ''),
+                    issue.get('line', 0),
+                    issue.get('message', ''),
+                )
                 if issue_key not in seen_issues:
                     unique_issues.append(issue)
                     seen_issues.add(issue_key)

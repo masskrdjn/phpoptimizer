@@ -11,7 +11,7 @@ class TestPackageImport(unittest.TestCase):
     def test_main_imports(self):
         """Test des imports principaux"""
         try:
-            from phpoptimizer import SimpleAnalyzer, PHPParser, ReportGenerator
+            from phpoptimizer import SimpleAnalyzer, ReportGenerator, Config
             self.assertTrue(True)  # Import réussi
         except ImportError as e:
             self.fail(f"Échec d'import: {e}")

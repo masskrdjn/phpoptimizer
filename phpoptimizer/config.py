@@ -69,177 +69,140 @@ class Config:
         self._init_default_rules()
     
     def _init_default_rules(self):
-        """Initialiser les règles par défaut"""
+        """Initialiser les règles par défaut.
+
+        Chaque règle est nommée selon la convention ``domaine.nom_precis``.
+        Toute règle émise par un analyseur doit être déclarée ici, sinon elle
+        sera filtrée par :py:meth:`should_apply_rule`.
+        """
+        SECURITY = RuleCategory.SECURITY
+        ERROR = RuleCategory.ERROR
+        PERF_CRITICAL = RuleCategory.PERFORMANCE_CRITICAL
+        PERF_GENERAL = RuleCategory.PERFORMANCE_GENERAL
+        MEMORY = RuleCategory.MEMORY
+        CODE_QUALITY = RuleCategory.CODE_QUALITY
+        PSR = RuleCategory.PSR
+
+        INFO = SeverityLevel.INFO
+        WARNING = SeverityLevel.WARNING
+        ERR = SeverityLevel.ERROR
+
+        CRITICAL = SeverityWeight.CRITICAL
+        HIGH = SeverityWeight.HIGH
+        MEDIUM = SeverityWeight.MEDIUM
+        LOW = SeverityWeight.LOW
+        VERY_LOW = SeverityWeight.VERY_LOW
+
+        def rule(severity, category, weight, params=None):
+            return RuleConfig(enabled=True, severity=severity, category=category,
+                              weight=weight, params=params or {})
+
         default_rules = {
-            # Règles de sécurité - Poids CRITICAL
-            'security.sql_injection': RuleConfig(
-                enabled=True,
-                severity=SeverityLevel.ERROR,
-                category=RuleCategory.SECURITY,
-                weight=SeverityWeight.CRITICAL
-            ),
-            'security.xss_vulnerability': RuleConfig(
-                enabled=True,
-                severity=SeverityLevel.ERROR,
-                category=RuleCategory.SECURITY,
-                weight=SeverityWeight.CRITICAL
-            ),
-            'security.weak_password_hashing': RuleConfig(
-                enabled=True,
-                severity=SeverityLevel.ERROR,
-                category=RuleCategory.SECURITY,
-                weight=SeverityWeight.CRITICAL
-            ),
-            
-            # Règles d'erreur - Poids HIGH
-            'error.foreach_non_iterable': RuleConfig(
-                enabled=True,
-                severity=SeverityLevel.ERROR,
-                category=RuleCategory.ERROR,
-                weight=SeverityWeight.HIGH
-            ),
-            'dead_code.unreachable_after_return': RuleConfig(
-                enabled=True,
-                severity=SeverityLevel.WARNING,
-                category=RuleCategory.ERROR,
-                weight=SeverityWeight.HIGH
-            ),
-            'dead_code.always_false_condition': RuleConfig(
-                enabled=True,
-                severity=SeverityLevel.WARNING,
-                category=RuleCategory.ERROR,
-                weight=SeverityWeight.HIGH
-            ),
-            
-            # Règles de performance critique - Poids HIGH
-            'performance.inefficient_loops': RuleConfig(
-                enabled=True,
-                severity=SeverityLevel.WARNING,
-                category=RuleCategory.PERFORMANCE_CRITICAL,
-                weight=SeverityWeight.HIGH,
-                params={'max_nested_loops': 3}
-            ),
-            'performance.algorithmic_complexity': RuleConfig(
-                enabled=True,
-                severity=SeverityLevel.WARNING,
-                category=RuleCategory.PERFORMANCE_CRITICAL,
-                weight=SeverityWeight.HIGH
-            ),
-            
-            # Règles de performance générale - Poids MEDIUM
-            'performance.constant_propagation': RuleConfig(
-                enabled=True,
-                severity=SeverityLevel.INFO,
-                category=RuleCategory.PERFORMANCE_GENERAL,
-                weight=SeverityWeight.MEDIUM
-            ),
-            'performance.repeated_calculations': RuleConfig(
-                enabled=True,
-                severity=SeverityLevel.WARNING,
-                category=RuleCategory.PERFORMANCE_GENERAL,
-                weight=SeverityWeight.MEDIUM
-            ),
-            'performance.repetitive_array_access': RuleConfig(
-                enabled=True,
-                severity=SeverityLevel.INFO,
-                category=RuleCategory.PERFORMANCE_GENERAL,
-                weight=SeverityWeight.MEDIUM,
-                params={'min_occurrences': 3}
-            ),
-            'performance.dynamic_method_call': RuleConfig(
-                enabled=True,
-                severity=SeverityLevel.INFO,
-                category=RuleCategory.PERFORMANCE_GENERAL,
-                weight=SeverityWeight.MEDIUM
-            ),
-            'performance.dynamic_function_call': RuleConfig(
-                enabled=True,
-                severity=SeverityLevel.INFO,
-                category=RuleCategory.PERFORMANCE_GENERAL,
-                weight=SeverityWeight.MEDIUM
-            ),
-            
-            # Règles de mémoire - Poids MEDIUM
-            'performance.large_arrays': RuleConfig(
-                enabled=True,
-                severity=SeverityLevel.WARNING,
-                category=RuleCategory.MEMORY,
-                weight=SeverityWeight.MEDIUM,
-                params={'max_array_size': 1000}
-            ),
-            'performance.unused_variables': RuleConfig(
-                enabled=True,
-                severity=SeverityLevel.INFO,
-                category=RuleCategory.MEMORY,
-                weight=SeverityWeight.MEDIUM
-            ),
-            'performance.unused_global_variable': RuleConfig(
-                enabled=True,
-                severity=SeverityLevel.INFO,
-                category=RuleCategory.MEMORY,
-                weight=SeverityWeight.MEDIUM
-            ),
-            'performance.global_could_be_local': RuleConfig(
-                enabled=True,
-                severity=SeverityLevel.INFO,
-                category=RuleCategory.MEMORY,
-                weight=SeverityWeight.MEDIUM
-            ),
-            
-            # Règles de qualité de code - Poids LOW
-            'performance.missing_parameter_type': RuleConfig(
-                enabled=True,
-                severity=SeverityLevel.INFO,
-                category=RuleCategory.CODE_QUALITY,
-                weight=SeverityWeight.LOW
-            ),
-            'performance.missing_return_type': RuleConfig(
-                enabled=True,
-                severity=SeverityLevel.INFO,
-                category=RuleCategory.CODE_QUALITY,
-                weight=SeverityWeight.LOW
-            ),
-            'performance.mixed_type_opportunity': RuleConfig(
-                enabled=True,
-                severity=SeverityLevel.INFO,
-                category=RuleCategory.CODE_QUALITY,
-                weight=SeverityWeight.LOW
-            ),
-            'best_practices.function_complexity': RuleConfig(
-                enabled=True,
-                severity=SeverityLevel.WARNING,
-                category=RuleCategory.CODE_QUALITY,
-                weight=SeverityWeight.LOW,
-                params={'max_complexity': 10}
-            ),
-            'best_practices.missing_documentation': RuleConfig(
-                enabled=True,
-                severity=SeverityLevel.INFO,
-                category=RuleCategory.CODE_QUALITY,
-                weight=SeverityWeight.LOW
-            ),
-            
-            # Règles PSR - Poids VERY_LOW
-            'best_practices.psr_compliance': RuleConfig(
-                enabled=True,
-                severity=SeverityLevel.INFO,
-                category=RuleCategory.PSR,
-                weight=SeverityWeight.VERY_LOW
-            ),
-            'best_practices.line_length': RuleConfig(
-                enabled=True,
-                severity=SeverityLevel.INFO,
-                category=RuleCategory.PSR,
-                weight=SeverityWeight.VERY_LOW
-            ),
-            'best_practices.naming': RuleConfig(
-                enabled=True,
-                severity=SeverityLevel.INFO,
-                category=RuleCategory.PSR,
-                weight=SeverityWeight.VERY_LOW
-            ),
+            # ───────── Sécurité (poids critique) ─────────
+            'security.sql_injection':           rule(ERR, SECURITY, CRITICAL),
+            'security.xss_vulnerability':       rule(ERR, SECURITY, CRITICAL),
+            'security.weak_password_hashing':   rule(ERR, SECURITY, CRITICAL),
+            'security.file_inclusion':          rule(ERR, SECURITY, CRITICAL),
+            'security.dangerous_function':      rule(WARNING, SECURITY, CRITICAL),
+            'security.authentication':          rule(WARNING, SECURITY, CRITICAL),
+            'security.configuration':           rule(WARNING, SECURITY, HIGH),
+            'security.sensitive_data_exposure': rule(WARNING, SECURITY, HIGH),
+
+            # ───────── Erreurs / bugs probables (poids élevé) ─────────
+            'error.foreach_non_iterable':        rule(ERR, ERROR, HIGH),
+            'error.syntax_parentheses':          rule(ERR, ERROR, HIGH),
+            'error.syntax_braces':               rule(ERR, ERROR, HIGH),
+            'error.syntax_semicolon':            rule(ERR, ERROR, HIGH),
+            'error.unclosed_quotes':             rule(ERR, ERROR, HIGH),
+            'error.null_method_call':            rule(WARNING, ERROR, HIGH),
+            'error.uninitialized_variable':      rule(WARNING, ERROR, HIGH),
+            'error.incorrect_argument_count':    rule(WARNING, ERROR, HIGH),
+            'error.assignment_in_condition':     rule(WARNING, ERROR, HIGH),
+            'error.typo':                        rule(WARNING, ERROR, MEDIUM),
+            'error.string_math_operation':       rule(WARNING, ERROR, HIGH),
+            'error.type_comparison':             rule(INFO, ERROR, MEDIUM),
+            'error.always_true_condition':       rule(WARNING, ERROR, MEDIUM),
+            'error.return_in_loop':              rule(INFO, ERROR, MEDIUM),
+
+            # ───────── Code mort (poids élevé, classés en erreurs) ─────────
+            'dead_code.unreachable_after_return': rule(WARNING, ERROR, HIGH),
+            'dead_code.unreachable_after_break':  rule(WARNING, ERROR, HIGH),
+            'dead_code.always_false_condition':   rule(WARNING, ERROR, HIGH),
+
+            # ───────── Performance critique (poids élevé) ─────────
+            'performance.inefficient_loops':       rule(WARNING, PERF_CRITICAL, HIGH,
+                                                        {'max_nested_loops': 3}),
+            'performance.algorithmic_complexity':  rule(WARNING, PERF_CRITICAL, HIGH),
+            'performance.deeply_nested_loops':     rule(WARNING, PERF_CRITICAL, HIGH),
+            'performance.nested_loop_same_array':  rule(WARNING, PERF_CRITICAL, HIGH),
+            'performance.linear_search_in_loop':   rule(WARNING, PERF_CRITICAL, HIGH),
+            'performance.sort_in_loop':            rule(WARNING, PERF_CRITICAL, HIGH),
+            'performance.heavy_function_in_loop':  rule(WARNING, PERF_CRITICAL, HIGH),
+            'performance.query_in_loop':           rule(WARNING, PERF_CRITICAL, HIGH),
+            'performance.expensive_function':      rule(INFO, PERF_CRITICAL, MEDIUM),
+            'performance.function_in_loop':        rule(INFO, PERF_CRITICAL, MEDIUM),
+            'performance.object_creation_in_loop': rule(WARNING, PERF_CRITICAL, HIGH),
+            'performance.loop_fusion_opportunity': rule(INFO, PERF_CRITICAL, MEDIUM),
+            'performance.superglobal_access_in_loop': rule(INFO, PERF_CRITICAL, MEDIUM),
+
+            # ───────── Performance générale (poids moyen) ─────────
+            'performance.constant_propagation':    rule(INFO, PERF_GENERAL, MEDIUM),
+            'performance.repeated_calculations':   rule(WARNING, PERF_GENERAL, MEDIUM),
+            'performance.repetitive_array_access': rule(INFO, PERF_GENERAL, MEDIUM,
+                                                        {'min_occurrences': 3}),
+            'performance.dynamic_method_call':     rule(INFO, PERF_GENERAL, MEDIUM),
+            'performance.dynamic_function_call':   rule(INFO, PERF_GENERAL, MEDIUM),
+            'performance.string_concatenation':    rule(INFO, PERF_GENERAL, MEDIUM),
+            'performance.regex_performance':       rule(INFO, PERF_GENERAL, MEDIUM),
+            'performance.regex_overkill':          rule(INFO, PERF_GENERAL, LOW),
+            'performance.count_vs_empty':          rule(INFO, PERF_GENERAL, LOW),
+            'performance.strlen_vs_empty':         rule(INFO, PERF_GENERAL, LOW),
+            'performance.substr_first_char':       rule(INFO, PERF_GENERAL, LOW),
+            'performance.array_push_single':       rule(INFO, PERF_GENERAL, LOW),
+            'performance.array_merge_single':      rule(INFO, PERF_GENERAL, LOW),
+            'performance.unprepared_query':        rule(WARNING, PERF_GENERAL, MEDIUM),
+            'performance.inefficient_file_reading': rule(INFO, PERF_GENERAL, MEDIUM),
+            'performance.repeated_file_checks':    rule(INFO, PERF_GENERAL, MEDIUM),
+
+            # ───────── Mémoire (poids moyen) ─────────
+            'performance.memory_management':       rule(WARNING, MEMORY, MEDIUM,
+                                                        {'max_array_size': 1000}),
+            'performance.large_arrays':            rule(WARNING, MEMORY, MEDIUM,
+                                                        {'max_array_size': 1000}),
+            'performance.excessive_memory':        rule(WARNING, MEMORY, MEDIUM),
+            'performance.array_merge_memory':      rule(INFO, MEMORY, MEDIUM),
+            'performance.resource_leak':           rule(WARNING, MEMORY, HIGH),
+            'performance.circular_reference':      rule(WARNING, MEMORY, MEDIUM),
+            'performance.unused_variables':        rule(INFO, MEMORY, MEDIUM),
+            'performance.unused_global_variable':  rule(INFO, MEMORY, MEDIUM),
+            'performance.global_could_be_local':   rule(INFO, MEMORY, MEDIUM),
+
+            # ───────── Qualité de code (poids faible) ─────────
+            'performance.missing_parameter_type':  rule(INFO, CODE_QUALITY, LOW),
+            'performance.missing_return_type':     rule(INFO, CODE_QUALITY, LOW),
+            'performance.mixed_type_opportunity':  rule(INFO, CODE_QUALITY, LOW),
+            'best_practices.function_complexity':  rule(WARNING, CODE_QUALITY, LOW,
+                                                        {'max_complexity': 10}),
+            'best_practices.missing_documentation': rule(INFO, CODE_QUALITY, LOW),
+            'best_practices.missing_docstring':    rule(INFO, CODE_QUALITY, LOW),
+            'best_practices.too_many_parameters':  rule(INFO, CODE_QUALITY, LOW,
+                                                        {'max_parameters': 5}),
+            'best_practices.complex_condition':    rule(INFO, CODE_QUALITY, LOW),
+            'best_practices.function_naming':      rule(INFO, CODE_QUALITY, LOW),
+
+            # ───────── Erreur interne d'un analyseur ─────────
+            'analyzer.error': rule(ERR, ERROR, CRITICAL),
+
+            # ───────── PSR (poids très faible) ─────────
+            'best_practices.psr_compliance':       rule(INFO, PSR, VERY_LOW),
+            'best_practices.line_length':          rule(INFO, PSR, VERY_LOW,
+                                                        {'max_line_length': 120}),
+            'best_practices.naming':               rule(INFO, PSR, VERY_LOW),
+            'best_practices.brace_style':          rule(INFO, PSR, VERY_LOW),
+            'best_practices.mixed_indentation':    rule(INFO, PSR, VERY_LOW),
+            'best_practices.multiple_statements':  rule(INFO, PSR, VERY_LOW),
         }
-        
+
         self.rules.update(default_rules)
     
     def load_rules_file(self, file_path: Path):

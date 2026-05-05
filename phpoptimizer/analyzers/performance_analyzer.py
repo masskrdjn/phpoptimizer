@@ -8,40 +8,18 @@ from typing import List, Dict, Any, Tuple
 
 
 from .base_analyzer import BaseAnalyzer
-from ..rules.performance import ConstantPropagationRule
 
 
 class PerformanceAnalyzer(BaseAnalyzer):
     """Analyseur spécialisé pour les problèmes de performance"""
-    
+
     def analyze(self, content: str, file_path: Path, lines: List[str]) -> List[Dict[str, Any]]:
         """Analyser les problèmes de performance dans le code PHP"""
         issues = []
-        # Exécuter les règles dynamiques (dont propagation de constantes)
-        config = self.config
-        # On instancie la règle avec la config globale
-        const_rule = ConstantPropagationRule(config)
-        parse_result = {'content': content, 'lines': lines, 'file_path': str(file_path)}
-        try:
-            const_issues = const_rule.analyze(parse_result)
-            for issue in const_issues:
-                # Ajouter le chemin du fichier si absent
-                if not issue.get('file_path'):
-                    issue['file_path'] = str(file_path)
-                issues.append(issue)
-        except Exception as e:
-            issues.append({
-                'rule_name': 'performance.constant_propagation',
-                'message': f'Erreur lors de la propagation de constantes: {e}',
-                'file_path': str(file_path),
-                'line': 0,
-                'column': 0,
-                'severity': 'error',
-                'issue_type': 'performance',
-                'suggestion': '',
-                'code_snippet': ''
-            })
-        
+
+        # Détecter les opportunités de propagation de constantes
+        self._detect_constant_propagation(lines, file_path, issues)
+
         # Détecter les calculs répétés
         self._detect_repeated_calculations(lines, file_path, issues)
         
@@ -604,5 +582,65 @@ class PerformanceAnalyzer(BaseAnalyzer):
         # Ajouter un suffixe si nécessaire
         if len(var_name) > 20:
             var_name = var_name[:17] + 'Tmp'
-        
+
         return var_name
+
+    def _detect_constant_propagation(self, lines: List[str], file_path: Path,
+                                     issues: List[Dict[str, Any]]) -> None:
+        """Détecter les variables dont la valeur reste constante et qui pourraient
+        être remplacées par leur littéral (propagation de constantes)."""
+        const_assignments: Dict[str, Tuple[str, int]] = {}
+        modified_vars: set = set()
+
+        # 1ère passe : repérer les affectations vers une valeur littérale
+        const_pattern = re.compile(
+            r"^\s*\$([a-zA-Z_][a-zA-Z0-9_]*)\s*=\s*"
+            r"([\d]+|'[^']*'|\"[^\"]*\"|true|false|null)\s*;",
+            re.IGNORECASE,
+        )
+        for line_num, line in enumerate(lines, 1):
+            match = const_pattern.match(line)
+            if match:
+                var, value = match.group(1), match.group(2)
+                if var not in const_assignments and var not in modified_vars:
+                    const_assignments[var] = (value, line_num)
+
+        # 2e passe : repérer toute mutation ultérieure de ces variables
+        modification_patterns = [
+            r'\$([a-zA-Z_][a-zA-Z0-9_]*)\+\+',
+            r'\+\+\$([a-zA-Z_][a-zA-Z0-9_]*)',
+            r'\$([a-zA-Z_][a-zA-Z0-9_]*)\-\-',
+            r'\-\-\$([a-zA-Z_][a-zA-Z0-9_]*)',
+            r'\$([a-zA-Z_][a-zA-Z0-9_]*)\s*[+\-*\/%.]=',
+            r'\$([a-zA-Z_][a-zA-Z0-9_]*)\s*=\s*'
+            r'(?![\d]+|\'[^\']*\'|\"[^\"]*\"|true|false|null\s*;)',
+        ]
+        compiled_mods = [re.compile(p) for p in modification_patterns]
+        for line in lines:
+            for pattern in compiled_mods:
+                for match in pattern.finditer(line):
+                    var = match.group(1)
+                    modified_vars.add(var)
+                    const_assignments.pop(var, None)
+
+        # 3e passe : signaler chaque utilisation hors déclaration
+        for var, (value, decl_line) in const_assignments.items():
+            usage_re = re.compile(rf'\${var}(?!\s*[=+\-*\/%.]=)')
+            for line_num, line in enumerate(lines, 1):
+                if line_num == decl_line:
+                    continue
+                stripped = line.strip()
+                if stripped.startswith('//') or stripped.startswith('#'):
+                    continue
+                for match in usage_re.finditer(line):
+                    issues.append(self._create_issue(
+                        rule_name='performance.constant_propagation',
+                        message=f"Propagation de constante possible : remplacer '${var}' par {value}",
+                        file_path=file_path,
+                        line=line_num,
+                        severity='info',
+                        issue_type='performance',
+                        suggestion=f"Remplacer '${var}' par {value}",
+                        code_snippet=stripped,
+                        column=match.start(),
+                    ))
